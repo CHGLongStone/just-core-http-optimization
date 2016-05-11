@@ -1,6 +1,6 @@
 {
 	"name" : "just-core/http-optimization",
-	"description" : "Static asset management, js, css etc. Compile to reduce http request load, minify to reduce http load times",
+	"description" : "Static asset management, js, css etc. Compile to reduce http request load requests, minify to reduce http load times",
 	"license" : "GNU",
 	"keywords" : [
 		"just-core",
