@@ -1,0 +1,27 @@
+{
+	"name" : "just-core/http-optimization",
+	"description" : "PHP Enterprise HA Framework",
+	"license" : "GNU",
+	"keywords" : [
+		"just-core",
+		"Service Oriented Architechture",
+		"Enterprise",
+		"HA",
+		"Framework",
+	  "http",
+	  "optimization"
+	],
+	"version" : "0.*",
+	"homepage" : "https://github.com/CHGLongStone/just-core-http-optimization",
+	"require" : {
+		"php" : ">=5.3.3",
+		"kriswallsmith/assetic" : "v1.3.2",
+		"mrclay/minify" : "2.3.0",
+		"natxet/CssMin": "v3.0.4"
+	},
+	"autoload" : {
+		"classmap" : [
+			"SERVICES"
+		]
+	}
+}
