@@ -16,7 +16,7 @@
 	"homepage" : "https://github.com/CHGLongStone/just-core-http-optimization",
 	"require" : {
 		"php" : ">=5.3.3",
-		"just-core/foundation" : "dev-master"
+		"just-core/foundation" : "dev-master",
 		"kriswallsmith/assetic" : "v1.3.2",
 		"mrclay/minify" : "2.3.0",
 		"natxet/CssMin": "v3.0.4"
