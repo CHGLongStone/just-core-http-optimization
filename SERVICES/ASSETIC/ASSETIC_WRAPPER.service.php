@@ -3,6 +3,29 @@
  * ASSETIC WRAPPER 
  * https://github.com/kriswallsmith/assetic
  *  
+ * when installing dependencies from composer I ran into some BS
+ * defining
+ *	"autoload" : {
+ *		"classmap" : [
+ *			"SERVICES"
+ *		]
+ *	}
+ * 
+ * DOESNT allow a dependent project using the psr-0 namespace 
+ * (or more explicitly defines a "psr-0" section under its own "autoload" definition ) 
+ * to be parsed for a reason I wasn't able to determine in less than 20 mins...
+ * 
+ * you need to add the projects source directory to the autoload->classmap
+ * of the main projects composer.json
+ *	"autoload" : {
+ *		"classmap" : [
+ *			"SERVICES",
+ *			"vendor/kriswallsmith/assetic/src"
+ *		]
+ *	} * 
+ * 
+ * 
+ * 
  * 
  * @author	Jason Medland<jason.medland@gmail.com>
  * @package	SERVICE\METRONIC\ASSETIC
@@ -15,17 +38,37 @@ namespace JCORE\SERVICE\HTTP_OPTIMIZATION\ASSETIC;
 
 #use JCORE\TRANSPORT\SOA\SOA_BASE as SOA_BASE;
 #use JCORE\DAO\DAO as DAO;
+
 /*
 */
 use Assetic\AssetManager AS AssetManager;
 use Assetic\AssetWriter AS AssetWriter;
 use Assetic\Asset\AssetCollection AS AssetCollection;
+use Assetic\Asset\BaseAsset AS BaseAsset;
 use Assetic\Asset\FileAsset AS FileAsset;
 use Assetic\Asset\GlobAsset AS GlobAsset;
 use Assetic\Asset\HttpAsset AS HttpAsset;
 use Assetic\Asset\StringAsset AS StringAsset;
 use Assetic\Asset\AssetCache AS AssetCache;
+use Assetic\Filter\FilterInterface AS FilterInterface;
+use Assetic\Filter\DependencyExtractorInterface AS DependencyExtractorInterface;
+use Assetic\Filter\BaseNodeFilter AS BaseNodeFilter;
 
+/* CSS FILTERS 
+use Assetic\Filter\CssMinFilter AS CssMinFilter;
+use Assetic\Filter\CleanCssFilter AS CleanCssFilter;
+use Assetic\Filter\UglifyCssFilter AS UglifyCssFilter;
+use Assetic\Filter\CssRewriteFilter AS CssRewriteFilter;
+*/
+
+/* JS FILTERS 
+use Assetic\Filter\JSMinFilter AS JSMinFilter;
+use Assetic\Filter\JSMinPlusFilter AS JSMinPlusFilter;
+use Assetic\Filter\JSqueezeFilter AS JSqueezeFilter;
+use Assetic\Filter\UglifyJs2Filter AS UglifyJs2Filter;
+use Assetic\Filter\UglifyJsFilter AS UglifyJsFilter;
+use Assetic\Filter\GoogleClosure\CompilerApiFilter AS ClosureCompilerApiFilter;
+*/
 
 /**
  * Class ASSETIC_WRAPPER
@@ -37,62 +80,79 @@ class ASSETIC_WRAPPER {
 	/** 
 	* 
 	*/
-	public $config = array(
-		'LOAD_ID' => 'ROUTES',
-	);
-	/** 
-	* 
-	*/
-	public $cacheDir = 'CACHE/HTTP/';
-	
-
-	/** 
-	* 
-	*/
-	private $CACHE_PATH = 'CACHE/HTTP/';
-	private $HTTP_PATH = 'assets/cache/';
-	
+	public $CACHE_PATH = '';
+	public $HTTP_PATH = '';
+	public	$CSS_FILTER = array();
+	public	$JS_FILTER = array();
 	
 	/**
-	* DESCRIPTOR: an empty constructor, the service MUST be called with 
-	* the service name and the service method name specified in the 
-	* in the method property of the JSONRPC request in this format
-	* 		""method":"AJAX_STUB.aServiceMethod"
+	* 
+     * @param string $sourceRoot The source asset root directory
+     * @param string $sourcePath The source asset path
 	* 
 	* @param param 
 	* @return return  
 	*/
 	public function __construct($args=null){
+
+
+		$this->config = $GLOBALS['CONFIG_MANAGER']->getSetting($LOAD_ID = 'ASSETIC');
+		#echo __METHOD__.'@'.__LINE__.'  $this->config<pre>['.var_export($this->config, true).']</pre> '.'<br>'.PHP_EOL;
+		
+		if(
+			isset($this->config["FILTERS"]["CSS"]["DEFAULT"]) 
+			&& 
+			'' != $this->config["FILTERS"]["CSS"]["DEFAULT"]
+		){
+			$this->CSS_FILTER[] = new $this->config["FILTERS"]["CSS"]["DEFAULT"]();
+		}
+		if(
+			isset($this->config["FILTERS"]["JS"]["DEFAULT"]) 
+			&& 
+			'' != $this->config["FILTERS"]["JS"]["DEFAULT"]
+		){
+			$this->JS_FILTER[] = new $this->config["FILTERS"]["JS"]["DEFAULT"]();
+		}
+		if(isset($this->config["CACHE_PATH"])){
+			$this->CACHE_PATH = $this->config["CACHE_PATH"];
+		}
+		
+		if(isset($this->config["HTTP_PATH"])){
+			$this->HTTP_PATH = $this->config["HTTP_PATH"];
+		}
+		
+		
 		
 		$this->FULL_CACHE_PATH = $GLOBALS["APPLICATION_ROOT"].$this->CACHE_PATH;
+		#echo __METHOD__.'@'.__LINE__.'  $this->FULL_CACHE_PATH['.$this->FULL_CACHE_PATH.'] '.'<br>'.PHP_EOL; 
 		if(isset($args["FULL_CACHE_PATH"]) || '' != $args["FULL_CACHE_PATH"]){
 			$this->FULL_CACHE_PATH = $args["FULL_CACHE_PATH"];
 		}
-		/*
-		$_SERVER["DOCUMENT_ROOT"]
-		$_SERVER["HTTP_HOST"]
-		*/
-		
+		#echo __METHOD__.'@'.__LINE__.'  $this->FULL_CACHE_PATH['.$this->FULL_CACHE_PATH.'] '.'<br>'.PHP_EOL; 
+
 		$this->FULL_HTTP_PATH = $this->HTTP_PATH;
+		#echo __METHOD__.'@'.__LINE__.'  $this->FULL_HTTP_PATH['.$this->FULL_HTTP_PATH.'] '.'<br>'.PHP_EOL; 
 		if(isset($args["FULL_HTTP_PATH"]) || '' != $args["FULL_HTTP_PATH"]){
 			$this->FULL_HTTP_PATH = $args["FULL_HTTP_PATH"];
 		}
 		
-		
-		
+		#echo __METHOD__.'@'.__LINE__.'  $this->FULL_HTTP_PATH['.$this->FULL_HTTP_PATH.'] '.'<br>'.PHP_EOL; 
+
 		/*
-		echo __METHOD__.'@'.__LINE__.'$this->CACHE_PATH<pre>['.var_export($this->CACHE_PATH, true).']</pre>'.'<br>'.PHP_EOL; 
-		echo __METHOD__.'@'.__LINE__.'  _SERVER<pre>['.var_export($_SERVER, true).']</pre> '.'<br>'.PHP_EOL; 
-		echo __METHOD__.'@'.__LINE__.'EXISTS $this->CACHE_PATH<pre>['.var_export($this->CACHE_PATH, true).']</pre>'.'<br>'.PHP_EOL; 
+		echo __METHOD__.'@'.__LINE__.'  $_SERVER["DOCUMENT_ROOT"]['.$_SERVER["DOCUMENT_ROOT"].'] '.'<br>'.PHP_EOL; 
+		echo __METHOD__.'@'.__LINE__.'  $_SERVER["HTTP_HOST"]['.$_SERVER["HTTP_HOST"].'] '.'<br>'.PHP_EOL; 
 		*/
+		
 		if(!is_dir($this->FULL_CACHE_PATH)){
+			echo __METHOD__.'@'.__LINE__.'   '.'<br>'.PHP_EOL; 
 			return '$this->CACHE_PATH ['.$this->CACHE_PATH."] doesn't exist ";
 		}
-		if(!is_dir($_SERVER["DOCUMENT_ROOT"].$this->HTTP_PATH)){
+		if(!is_dir($_SERVER["DOCUMENT_ROOT"].'/'.$this->HTTP_PATH)){
+			echo __METHOD__.'@'.__LINE__.'  ['.$_SERVER["DOCUMENT_ROOT"].$this->HTTP_PATH.'] '.'<br>'.PHP_EOL; 
 			return '$this->HTTP_PATH ['.$this->HTTP_PATH."] doesn't exist ";
 		}
+		#echo __METHOD__.'@'.__LINE__.'  $this<pre>['.var_export($this, true).']</pre> '.'<br>'.PHP_EOL;
 		
-		$this->config = $GLOBALS['CONFIG_MANAGER']->getSetting($LOAD_ID = 'METRONIC', $SECTION_NAME = 'ROUTES');
 		
 		return false;
 	}
@@ -109,31 +169,77 @@ class ASSETIC_WRAPPER {
 	/**
 	*
 	*/
-	public function checkCompiled($args=null){
-		
-		$passCMD = 'ls -lah '.$this->FULL_CACHE_PATH;
-		#$passResult = null;
-		$passResult = shell_exec($passCMD);
-		$hashResult = md5($passResult);
-		
-		$this->lastHash = '';
-		if(is_file($this->FULL_CACHE_PATH.'compiled.hash')){
-			$this->lastHash = file_get_contents($this->CACHE_PATH.'compiled.hash');
-		}
-		
-		if($this->lastHash != $hashResult){
-			file_put_contents($this->CACHE_PATH.'compiled.hash', $hashResult);
-			return $hashResult;
-		}
-		return false;
+	public function getCachePath($args=null){
+		#CACHE_PATH $GLOBALS["APPLICATION_ROOT"].
+		return $GLOBALS["APPLICATION_ROOT"].$this->CACHE_PATH;
 	}
 	/**
-	* DESCRIPTOR: an example namespace call 
-	* @param param 
-	* @return return  
+	*
 	*/
-	public function cacheCSS($args=null){
-		#, $name=null, $collection=null
+	public function getHttpResolvedPath($args=null){
+		#HTTP_PATH
+		return $_SERVER["DOCUMENT_ROOT"].'/'.$this->HTTP_PATH;
+		#return $this->HTTP_PATH;
+	}
+	/**
+	*
+	*/
+	public function getHttpPath($args=null){
+		#HTTP_PATH
+		#return $_SERVER["DOCUMENT_ROOT"].'/'.$this->HTTP_PATH;
+		return '/'.$this->HTTP_PATH;
+	}
+	/**
+	*
+	*/
+	public function poisonCache($args=null){
+		$hashResult = 'POISON';
+		return file_put_contents($_SERVER["DOCUMENT_ROOT"].'/'.$this->HTTP_PATH.'compiled.check', $hashResult);
+	}
+	
+	/**
+	*
+	*/
+	public function pauseCache($args=null){
+		$hashResult = 'IGNORE';
+		return file_put_contents($_SERVER["DOCUMENT_ROOT"].'/'.$this->HTTP_PATH.'compiled.check', $hashResult);
+	}
+	
+	/**
+	*
+	*/
+	public function getCachedName($args=null){
+		$checkCacheArgs = $this->checkCacheArgs($args);
+		if(true !== $checkCacheArgs){
+			return $checkCacheArgs;
+		}
+		
+		$filename = $args["name"];
+		if(!is_scalar($args["route"]) || '' != $args["route"] ){
+			if(
+				false !== stripos($this->FULL_HTTP_PATH, 'http')
+				||
+				'external' == strtolower( $args["route"])
+			){
+				echo __METHOD__.'@'.__LINE__ .'http exists in this->FULL_HTTP_PATH ['.$this->FULL_HTTP_PATH.'] need to handle it'.PHP_EOL;
+			}
+			$filename = $filename.'_'.$args["route"];
+			
+		}
+		return $filename;
+	}
+	
+	/**
+	*
+	*/
+	public function checkCacheArgs($args=null){
+			#echo __METHOD__.'@'.__LINE__.'  $this->lastHash<pre>['.var_export($this->lastHash, true).']</pre> '.'<br>'.PHP_EOL;  
+			#echo __METHOD__.'@'.__LINE__.'  $this->checkCompiled()<pre>['.var_export($this->checkCompiled(), true).']</pre> '.'<br>'.PHP_EOL;  
+		if(false === $this->checkCompiled()){
+			return $this->lastHash.' .....  ';
+			
+		}
+		
 		if(!is_array($args) || 0 == count($args) ){
 			return '$args not array or empty is_array($args)['.is_array($args).'] count($args)['.count($args).']  ';
 		}
@@ -143,60 +249,116 @@ class ASSETIC_WRAPPER {
 		if(!is_scalar($args["name"]) || '' == $args["name"] ){
 			return '$args["name"] not scalar or empty ['.$args["name"].']';
 		}
-		$filename = $args["name"];
-		if(!is_scalar($args["route"]) || '' != $args["route"] ){
-			if(false !== stripos($this->FULL_HTTP_PATH, 'http')){
-				/**************************************/
-				echo 'http exists in this->FULL_HTTP_PATH ['.$this->FULL_HTTP_PATH.'] need to handle it';
+		return true;
+	}
+	/**
+	*
+	*/
+	public function checkCompiled($args=null){
+		#echo __METHOD__.'@'.__LINE__.'  $this->lastHash<pre>['.var_export($this->lastHash, true).']</pre> '.'<br>'.PHP_EOL;  
+		
+
+		if(!isset($this->lastHash)){
+			$this->lastHash = '';
+			if(is_file($_SERVER["DOCUMENT_ROOT"].'/'.$this->HTTP_PATH.'compiled.check')){
+				$this->lastHash = file_get_contents($_SERVER["DOCUMENT_ROOT"].'/'.$this->HTTP_PATH.'compiled.check');
 			}
-			$filename = $filename.'_'.$args["route"];
-			
+		}
+		#echo __METHOD__.'@'.__LINE__.' $this->lastHash['.$this->lastHash.'] '.PHP_EOL; 
+		switch($this->lastHash){
+			case "POISON":
+				# delete directory contents
+				#echo __METHOD__.'@'.__LINE__.' $this->lastHash['.$this->lastHash.'] '.PHP_EOL; 
+				return false;
+				break;
+			case "IGNORE":
+				#echo __METHOD__.'@'.__LINE__.' $this->lastHash['.$this->lastHash.'] '.PHP_EOL; 
+				#ignore calls to read/write files
+				return false;
+				break;
+			default:
+				#echo __METHOD__.'@'.__LINE__.' $this->lastHash['.$this->lastHash.'] '.PHP_EOL; 
+				#action
+				return true;
+				break;
 		}
 		
-		
+		return false;
+	}
+	/**
+	* DESCRIPTOR: an example namespace call 
+	* @param param 
+	* @return return  
+	*/
+	public function cacheCSS($args=null){
+		$checkCacheArgs = $this->checkCacheArgs($args);
+		if(true !== $checkCacheArgs){
+			return $checkCacheArgs;
+		}
+
+		$filename = $this->getCachedName($args);
+		#echo 'HAZ filename['.$filename.']<br>'.PHP_EOL;
 		$AssetCollection = array();
 		foreach($args["collection"] AS $key => $value){
-			echo __METHOD__.'@'.__LINE__.'  key['.$key.']<pre>['.var_export(array_keys($value), true).']</pre> '.'<br>'.PHP_EOL; 
-			foreach($value AS $key2 => $value2){
-				echo __METHOD__.'@'.__LINE__.'  key2['.$key2.']<pre>['.var_export(array_keys($value2), true).']</pre> '.'<br>'.PHP_EOL; 
-				/*
-				if(false !== stripos($value["HREF"], 'http')){
-					$AssetCollection[] = new HttpAsset($value2["HREF"], array();//new Assetic\Filter\LessFilter())
-				}else{
-					$AssetCollection[] = new FileAsset($value2["HREF"], array();//new LessFilter())
-				}
-				*/
-				
-			}
+
 			
+			if(!isset($value["NO_CACHE"]) || 'TRUE' != $value["NO_CACHE"]){
+				if(false !== stripos($value["HREF"], 'http')){
+					#echo 'HAZ HTTP['.$value["HREF"].']<br>'.PHP_EOL;
+					$AssetCollection[] = new HttpAsset($value["HREF"], array());//new Assetic\Filter\LessFilter());
+				}else{
+					#echo 'NOT HAZ HTTP['.$_SERVER["DOCUMENT_ROOT"].$value["HREF"].']<br>'.PHP_EOL;
+					if(!isset($value["HREF"]) || '' == $value["HREF"]){
+						if(is_array($value)){
+							#echo __METHOD__.'@'.__LINE__.'  value<pre>['.var_export($value, true).']</pre> '.'<br>'.PHP_EOL;  
+							$cacheCSSArgs = array(
+								'collection' => $value,
+								'name' => $filename,
+								'route' => '',
+							);
+							#$this->cacheCSS($cacheCSSArgs);
+							$AssetCollection[] = new StringAsset($this->cacheCSS($cacheCSSArgs), array());
+							#$AssetCollection[] = new StringAsset($value["HREF"], new LessFilter());//new LessFilter());
+						}
+					}else{
+						$AssetCollection[] = new FileAsset(
+							$_SERVER["DOCUMENT_ROOT"].$value["HREF"] 
+							, $this->CSS_FILTER
+						);
+							/*
+							array() 
+							, array(new CleanCssFilter)
+							, array(new UglifyCssFilter)
+							, array(new CssRewriteFilter)
+							, dirname($_SERVER["DOCUMENT_ROOT"].$value["HREF"])
+							, '/assets/cache'
+							*/
+						/*
+						new *Filter());
+							#array(new Assetic\Filter\...),
+							#sourceRoot, 
+							#sourcePath,
+						*/
+						
+					}
+				}				
+			}
+
+
 		}
-		echo __METHOD__.'@'.__LINE__.'  AssetCollection<pre>['.var_export($AssetCollection, true).']</pre> '.'<br>'.PHP_EOL; 
-		
-		$Filter = array();
+
 		$css = new AssetCollection($AssetCollection, $Filter);
-		/*
-		$css = new AssetCollection(array(
-			new FileAsset('/path/to/src/styles.less', array(new LessFilter())),
-			new GlobAsset('/path/to/css/*'),
-		), array(
-			new Yui\CssCompressorFilter('/path/to/yuicompressor.jar'),
-		));
-		*/
-		#$this->FULL_HTTP_PATH
+
 		
 		$fileContents = $css->dump();
+		#echo __METHOD__.'@'.__LINE__.'  fileContents<pre>['.var_export(strlen($fileContents), true).']</pre> '.'<br>'.PHP_EOL; 
 		#$result = file_put_contents($this->settings["writePath"].$logDate, $this->traceString, FILE_APPEND | LOCK_EX);
-		$result = file_put_contents($this->HTTP_PATH.$filename, $fileContents);
-		echo __METHOD__.'@'.__LINE__.'  result<pre>['.var_export($result, true).']</pre> '.'<br>'.PHP_EOL; 
-		/*
-		$writer = new AssetWriter('/path/to/web');
-		$writer->writeManagerAssets($am);
-		use Assetic\AssetWriter;
-
-		$writer = new AssetWriter('/path/to/web');
-		$writer->writeManagerAssets($am);
-		*/
-		return;
+		$finalFilename = $_SERVER["DOCUMENT_ROOT"].'/'.$this->HTTP_PATH.$filename.'.css';
+		#echo __METHOD__.'@'.__LINE__.'  write to $finalFilename['.$finalFilename.'] '.'<br>'.PHP_EOL; 
+		$result = file_put_contents($finalFilename, $fileContents);
+		#echo __METHOD__.'@'.__LINE__.'  result<pre>['.var_export($result, true).']</pre> '.'<br>'.PHP_EOL; 
+	
+		return $result;
 	}
 	/**
 	* DESCRIPTOR: an example namespace call 
@@ -204,9 +366,74 @@ class ASSETIC_WRAPPER {
 	* @return return  
 	*/
 	public function cacheJS($args=null){
+		$checkCacheArgs = $this->checkCacheArgs($args);
+		if(true !== $checkCacheArgs){
+			#echo __FILE__.__LINE__.'<b>$checkCacheArgs</b>['.$checkCacheArgs.'] $args["name"] ['.$args["name"].']'.'<br>'.PHP_EOL;
+			return $checkCacheArgs;
+		}
+
+		$filename = $this->getCachedName($args);
+		#echo 'HAZ filename['.$filename.']<br>'.PHP_EOL;
+		$AssetCollection = array();
+		foreach($args["collection"] AS $key => $value){
+			if(isset($value["SRC"])){
+				$replace = array(""); 
+				$search  = array('"', 'src=', " ", ); 
+				$cleanedName = str_replace($search, $replace, $value["SRC"] );
+				#echo '$cleanedName['.$cleanedName.']  <br>'.PHP_EOL;
+				
+			}else{
+				#echo '<b>RENDER BODY</b>  <br>'.PHP_EOL;
+				
+			}
+			
+			/*
+			*/
+			if(false !== stripos($cleanedName, 'http')){
+				#echo 'HAZ HTTP['.$value["SRC"].']<br>'.PHP_EOL;
+				$AssetCollection[] = new HttpAsset($cleanedName, array());//new Assetic\Filter\LessFilter());
+			}else{
+				if(isset($value["BODY"]) && '' != $value["BODY"]){
+					#echo 'NOT HAZ SRC ['.$value["BODY"].']<br>'.PHP_EOL;
+					if(is_array($value)){
+						$cacheJSArgs = array(
+							'collection' => $value,
+							'name' => $filename,
+							'route' => '',
+						);
+						$AssetCollection[] = new StringAsset($value["BODY"], array());
+						#$AssetCollection[] = new StringAsset($value["BODY"], new LessFilter());//new LessFilter());
+					}
+				}else{
+					#echo 'HAZ LOCAL PATH['.$_SERVER["DOCUMENT_ROOT"].$cleanedName.'] SRC['.$value["SRC"].'] BODY['.$value["BODY"].']<br>'.PHP_EOL;
+					if('' != $cleanedName){
+						#$AssetCollection[] = new FileAsset($_SERVER["DOCUMENT_ROOT"].$cleanedName, array());
+						$AssetCollection[] = new FileAsset(
+							$_SERVER["DOCUMENT_ROOT"].$cleanedName
+							, $this->JS_FILTER
+						);
+					}
+				}
+			}
+
+		}
+		#echo __METHOD__.'@'.__LINE__.'  AssetCollection<pre>['.var_export($AssetCollection, true).']</pre> '.'<br>'.PHP_EOL;  
 		
+		#$Filter = array();
+		$js = new AssetCollection($AssetCollection, $Filter);
+
+
+		
+		$fileContents = $js->dump();
+		#echo __METHOD__.'@'.__LINE__.'  fileContents<pre>['.var_export(strlen($fileContents), true).']</pre> '.'<br>'.PHP_EOL; 
+		#$result = file_put_contents($this->settings["writePath"].$logDate, $this->traceString, FILE_APPEND | LOCK_EX);
+		$finalFilename = $_SERVER["DOCUMENT_ROOT"].'/'.$this->HTTP_PATH.$filename.'.js';
+		#echo __METHOD__.'@'.__LINE__.'  write to $finalFilename['.$finalFilename.'] '.'<br>'.PHP_EOL; 
+		$result = file_put_contents($finalFilename, $fileContents);
+		#echo __METHOD__.'@'.__LINE__.'  result<pre>['.var_export($result, true).']</pre> '.'<br>'.PHP_EOL; 
 	
-		return;
+		return $result;
+
 	}
 
 	
