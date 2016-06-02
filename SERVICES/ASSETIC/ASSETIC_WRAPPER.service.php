@@ -185,16 +185,34 @@ class ASSETIC_WRAPPER {
 	*
 	*/
 	public function getHttpPath($args=null){
-		#HTTP_PATH
-		#return $_SERVER["DOCUMENT_ROOT"].'/'.$this->HTTP_PATH;
 		return '/'.$this->HTTP_PATH;
 	}
 	/**
-	*
+	* DELETE IT ALL 
 	*/
-	public function poisonCache($args=null){
-		$hashResult = 'POISON';
-		return file_put_contents($_SERVER["DOCUMENT_ROOT"].'/'.$this->HTTP_PATH.'compiled.check', $hashResult);
+	public function flushCache($args=null){
+		$pattern = $this->FULL_CACHE_PATH.'/*.{css,js}';
+		$fileList = glob($pattern,GLOB_BRACE);
+		#echo __METHOD__.'@'.__LINE__.'pattern <pre>['.var_export($pattern,true).']</pre>'.PHP_EOL;
+		#echo __METHOD__.'@'.__LINE__.'fileList <pre>['.var_export($fileList,true).']</pre>'.PHP_EOL;
+		foreach($fileList AS $key => $value){
+			if(file_exists($value)){
+				$killIt = unlink($value);
+				if(false === $killIt){
+					#echo __METHOD__.'@'.__LINE__.' FAILED TO DELETE ['.$value.']'.PHP_EOL;
+				}
+			}
+		}
+		/*
+			$hashResult = 'POISON';
+			bool unlink ( string $filename [, resource $context ] )
+			array glob ( string $pattern [, int $flags = 0 ] )
+			$this->FULL_CACHE_PATH
+		$fileList = glob($pattern,GLOB_BRACE);
+		echo __METHOD__.'@'.__LINE__.'fileList <pre>['.var_export($fileList,true).']</pre>'.PHP_EOL;
+		*/
+		
+		return; # file_put_contents($_SERVER["DOCUMENT_ROOT"].'/'.$this->HTTP_PATH.'compiled.check', $hashResult);
 	}
 	
 	/**
@@ -202,6 +220,13 @@ class ASSETIC_WRAPPER {
 	*/
 	public function pauseCache($args=null){
 		$hashResult = 'IGNORE';
+		return file_put_contents($_SERVER["DOCUMENT_ROOT"].'/'.$this->HTTP_PATH.'compiled.check', $hashResult);
+	}
+	/**
+	*
+	*/
+	public function enableCache($args=null){
+		$hashResult = '';
 		return file_put_contents($_SERVER["DOCUMENT_ROOT"].'/'.$this->HTTP_PATH.'compiled.check', $hashResult);
 	}
 	
