@@ -77,12 +77,33 @@ use Assetic\Filter\GoogleClosure\CompilerApiFilter AS ClosureCompilerApiFilter;
 */
 class ASSETIC_WRAPPER { 
 
-	/** 
+	/**
+	* CACHE_PATH
 	* 
+	* @access public 
+	* @var string 
 	*/
 	public $CACHE_PATH = '';
+	/**
+	* HTTP_PATH
+	* 
+	* @access public 
+	* @var string 
+	*/
 	public $HTTP_PATH = '';
+	/**
+	* CSS_FILTER
+	* 
+	* @access public 
+	* @var array
+	*/
 	public	$CSS_FILTER = array();
+	/**
+	*JS_FILTER
+	* 
+	* @access public 
+	* @var array 
+	*/
 	public	$JS_FILTER = array();
 	
 	/**
@@ -191,7 +212,7 @@ class ASSETIC_WRAPPER {
 		#return $this->HTTP_PATH;
 	}
 	/**
-	* 
+	* getHttpPath
 	* 
 	* @access public
 	* @param array args 
