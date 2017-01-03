@@ -86,12 +86,11 @@ class ASSETIC_WRAPPER {
 	public	$JS_FILTER = array();
 	
 	/**
+	*  __construct
 	* 
-     * @param string $sourceRoot The source asset root directory
-     * @param string $sourcePath The source asset path
-	* 
-	* @param param 
-	* @return return  
+	* @access public
+	* @param array args 
+	* @return bool  
 	*/
 	public function __construct($args=null){
 
@@ -157,9 +156,11 @@ class ASSETIC_WRAPPER {
 		return false;
 	}
 	/**
-	* DESCRIPTOR: an example namespace call 
-	* @param param 
-	* @return return  
+	* DESCRIPTOR: init
+		* 
+	* @access public
+	* @param array args 
+	* @return null  
 	*/
 	public function init($args=null){
 		
@@ -167,14 +168,22 @@ class ASSETIC_WRAPPER {
 		return;
 	}
 	/**
-	*
+	* getCachePath
+	* 
+	* @access public
+	* @param array args 
+	* @return string  
 	*/
 	public function getCachePath($args=null){
 		#CACHE_PATH $GLOBALS["APPLICATION_ROOT"].
 		return $GLOBALS["APPLICATION_ROOT"].$this->CACHE_PATH;
 	}
 	/**
-	*
+	* getHttpResolvedPath
+	* 
+	* @access public
+	* @param array args 
+	* @return string  
 	*/
 	public function getHttpResolvedPath($args=null){
 		#HTTP_PATH
@@ -182,13 +191,22 @@ class ASSETIC_WRAPPER {
 		#return $this->HTTP_PATH;
 	}
 	/**
-	*
+	* 
+	* 
+	* @access public
+	* @param array args 
+	* @return string  
 	*/
 	public function getHttpPath($args=null){
 		return '/'.$this->HTTP_PATH;
 	}
 	/**
+	* flushCache
 	* DELETE IT ALL 
+	* 
+	* @access public
+	* @param array args 
+	* @return string  
 	*/
 	public function flushCache($args=null){
 		$pattern = $this->FULL_CACHE_PATH.'/*.{css,js}';
@@ -216,14 +234,22 @@ class ASSETIC_WRAPPER {
 	}
 	
 	/**
-	*
+	* pauseCache
+	* 
+	* @access public
+	* @param array args 
+	* @return string  
 	*/
 	public function pauseCache($args=null){
 		$hashResult = 'IGNORE';
 		return file_put_contents($_SERVER["DOCUMENT_ROOT"].'/'.$this->HTTP_PATH.'compiled.check', $hashResult);
 	}
 	/**
-	*
+	* enableCache
+	* 
+	* @access public
+	* @param array args 
+	* @return string  
 	*/
 	public function enableCache($args=null){
 		$hashResult = '';
@@ -231,7 +257,11 @@ class ASSETIC_WRAPPER {
 	}
 	
 	/**
-	*
+	* getCachedName
+	* 
+	* @access public
+	* @param array args 
+	* @return string  
 	*/
 	public function getCachedName($args=null){
 		$checkCacheArgs = $this->checkCacheArgs($args);
@@ -255,7 +285,11 @@ class ASSETIC_WRAPPER {
 	}
 	
 	/**
-	*
+	* checkCacheArgs
+	* 
+	* @access public
+	* @param array args 
+	* @return bool  
 	*/
 	public function checkCacheArgs($args=null){
 			#echo __METHOD__.'@'.__LINE__.'  $this->lastHash<pre>['.var_export($this->lastHash, true).']</pre> '.'<br>'.PHP_EOL;  
@@ -277,7 +311,11 @@ class ASSETIC_WRAPPER {
 		return true;
 	}
 	/**
-	*
+	* checkCompiled
+	* 
+	* @access public
+	* @param array args 
+	* @return bool  
 	*/
 	public function checkCompiled($args=null){
 		#echo __METHOD__.'@'.__LINE__.'  $this->lastHash<pre>['.var_export($this->lastHash, true).']</pre> '.'<br>'.PHP_EOL;  
@@ -311,9 +349,12 @@ class ASSETIC_WRAPPER {
 		return false;
 	}
 	/**
-	* DESCRIPTOR: an example namespace call 
-	* @param param 
-	* @return return  
+	* DESCRIPTOR: cacheCSS
+	* 
+	* 
+	* @access public
+	* @param array args 
+	* @return bool  
 	*/
 	public function cacheCSS($args=null){
 		$checkCacheArgs = $this->checkCacheArgs($args);
@@ -386,9 +427,12 @@ class ASSETIC_WRAPPER {
 		return $result;
 	}
 	/**
-	* DESCRIPTOR: an example namespace call 
-	* @param param 
-	* @return return  
+	* DESCRIPTOR: cacheJS
+	* 
+	* 
+	* @access public
+	* @param array args 
+	* @return bool  
 	*/
 	public function cacheJS($args=null){
 		$checkCacheArgs = $this->checkCacheArgs($args);
