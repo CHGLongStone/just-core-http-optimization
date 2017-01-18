@@ -28,8 +28,8 @@
  * 
  * 
  * @author	Jason Medland<jason.medland@gmail.com>
- * @package	SERVICE\METRONIC\ASSETIC
- * @subpackage	
+ * @package	JCORE\SERVICE\HTTP_OPTIMIZATION
+ * 	
  */
  
  
@@ -73,7 +73,7 @@ use Assetic\Filter\GoogleClosure\CompilerApiFilter AS ClosureCompilerApiFilter;
 /**
  * Class ASSETIC_WRAPPER
  *
- * @package JCORE\SERVICE\HTTP_OPTIMIZATION\ASSETIC
+ * @package JCORE\SERVICE\HTTP_OPTIMIZATION
 */
 class ASSETIC_WRAPPER { 
 
