@@ -12,7 +12,7 @@
 		"presentation layer",
 	 	"optimization"
 	],
-	"version" : "0.*",
+	"version" : "v0.7.1",
 	"homepage" : "https://chglongstone.github.io/just-core-http-optimization",
 	"require" : {
 		"php" : ">=5.3.3",
