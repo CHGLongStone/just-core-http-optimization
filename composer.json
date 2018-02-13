@@ -1,7 +1,7 @@
 {
 	"name" : "just-core/http-optimization",
 	"description" : "Static asset management, js, css etc. Compile to reduce http request load requests, minify to reduce http load times",
-	"license" : "GNU",
+	"license" : "MIT",
 	"keywords" : [
 		"just-core",
 		"Service Oriented Architechture",
@@ -12,7 +12,7 @@
 		"presentation layer",
 	 	"optimization"
 	],
-	"version" : "v0.7.1",
+	"version" : "v0.7.2",
 	"homepage" : "https://chglongstone.github.io/just-core-http-optimization",
 	"require" : {
 		"php" : ">=5.3.3",
